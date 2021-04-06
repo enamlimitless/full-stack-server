@@ -4,7 +4,7 @@ const port = process.env.PORT || 5050
 const bodyParser = require('body-parser')
 const cors = require('cors')
 require('dotenv').config()
-
+const ObjectID = require('mongodb').ObjectID
 app.use(cors())
 app.use(bodyParser.json())
 
@@ -18,6 +18,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
   const collection = client.db("eMarket").collection("products");
+  const ordersCollection = client.db("eMarket").collection("order");
 
   app.post('/addProduct', (req, res) =>{
     const newProduct = req.body
@@ -36,9 +37,25 @@ client.connect(err => {
       console.log('from database', items)
     })
   })
-
-
   console.log('CONNECTION', err)
+
+
+  app.post('/order', (req, res) =>{
+    const order = req.body
+    ordersCollection.insertOne(order)
+    .then(result => {
+      console.log(result.insertedCount > 0)
+      res.send(result.insertedCount > 0)
+    })
+    console.log('adding new product', order)
+  })
+
+  app.delete('deleteProduct/:id', (req, res) =>{
+    const id = ObjectID(req.params.id)
+    collection.findOneAndDelete({_id: id})
+    .then(documents => res.send(!!documents.value))
+    console.log('deleted', id)
+  })
 });
 
 
